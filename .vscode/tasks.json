@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Backend: Setup & Run (Django)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"python -m venv .venv; .\\.venv\\Scripts\\Activate.ps1; pip install -U pip; pip install -r backend/requirements.txt; python backend/manage.py makemigrations; python backend/manage.py migrate; python backend/manage.py createsuperuser --noinput; python backend/manage.py runserver 0.0.0.0:8000"
+			],
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		}
+	]
+}
