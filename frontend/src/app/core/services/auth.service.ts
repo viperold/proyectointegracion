@@ -1,5 +1,13 @@
 import { Injectable } from '@angular/core';
-import { Auth, User, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updateProfile } from '@angular/fire/auth';
+import {
+  Auth,
+  User,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signOut
+} from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc } from '@angular/fire/firestore';
 import { from, Observable } from 'rxjs';
 
@@ -15,45 +23,72 @@ export class AuthService {
 
   // 🔹 1. Registrar usuario (Auth + Firestore)
   register(email: string, password: string, extraData?: any): Observable<User> {
-    return from(
-      (async () => {
-        const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
-        const user = userCredential.user;
+  return from(
+    (async () => {
+      // 🔐 Normalizar y validar dominio
+      const normalizedEmail = email.trim().toLowerCase();
 
-        if (extraData?.nombre && extraData?.apellido) {
-          await updateProfile(user, { displayName: `${extraData.nombre} ${extraData.apellido}` });
-        }
+      if (!normalizedEmail.endsWith('@inacapmail.cl')) {
+        // Lanzamos error: esto llegará al .subscribe(error) del componente
+        throw new Error('Solo se permiten correos @inacapmail.cl');
+      }
 
-        const userDocRef = doc(this.firestore, `usuarios/${user.uid}`);
-        await setDoc(userDocRef, {
-          uid: user.uid,
-          nombre: extraData?.nombre || '',
-          apellido: extraData?.apellido || '',
-          email: user.email,
-          carrera: extraData?.carrera || '',
-          semestre: extraData?.semestre || 1,
-          telefono: extraData?.telefono || '',
-          bio: extraData?.bio || '',
-          avatar: extraData?.avatar || '',
-          habilidades: extraData?.habilidades || [],
-          is_active: true,
-          date_joined: new Date().toISOString()
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        this.auth,
+        normalizedEmail,
+        password
+      );
+      const user = userCredential.user;
+
+      // Actualizar displayName si viene nombre + apellido
+      if (extraData?.nombre && extraData?.apellido) {
+        await updateProfile(user, {
+          displayName: `${extraData.nombre} ${extraData.apellido}`,
         });
+      }
 
-        return user;
-      })()
-    );
-  }
+      // Guardar/actualizar en Firestore
+      const userDocRef = doc(this.firestore, `usuarios/${user.uid}`);
+      await setDoc(userDocRef, {
+        uid: user.uid,
+        nombre: extraData?.nombre || '',
+        apellido: extraData?.apellido || '',
+        email: normalizedEmail,
+        carrera: extraData?.carrera || '',
+        semestre: extraData?.semestre || 1,
+        telefono: extraData?.telefono || '',
+        bio: extraData?.bio || '',
+        avatar: extraData?.avatar || '',
+        habilidades: extraData?.habilidades || [],
+        is_active: true,
+        date_joined: new Date().toISOString(),
+      });
+
+      return user;
+    })()
+  );
+}
 
   // 🔹 2. Iniciar sesión
   login(email: string, password: string): Observable<User> {
-    return from(
-      (async () => {
-        const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
-        return userCredential.user;
-      })()
-    );
-  }
+  return from(
+    (async () => {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      if (!normalizedEmail.endsWith('@inacapmail.cl')) {
+        throw new Error('Solo se permiten correos @inacapmail.cl');
+      }
+
+      const userCredential = await signInWithEmailAndPassword(
+        this.auth,
+        normalizedEmail,
+        password
+      );
+      return userCredential.user;
+    })()
+  );
+}
 
   // 🔹 3. Cerrar sesión
   logout(): Observable<void> {

@@ -229,25 +229,47 @@ export class RegistroComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.formData.password !== this.formData.password2) {
-      this.errorMessage = 'Las contraseñas no coinciden';
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    this.authService
-  .register(this.formData.email, this.formData.password, this.formData)
-  .subscribe({
-    next: (user) => {
-      console.log('✅ Usuario registrado:', user);
-      alert('Registro exitoso. ¡Bienvenido!');
-    },
-    error: (error: any) => {
-      console.error('❌ Error al registrar:', error);
-      alert('Ocurrió un error durante el registro. Revisa los datos e inténtalo nuevamente.');
-    }
-  });
+  // 1. Validación de contraseñas
+  if (this.formData.password !== this.formData.password2) {
+    this.errorMessage = 'Las contraseñas no coinciden';
+    this.successMessage = '';
+    return;
   }
+
+  // 2. Validación de dominio INACAP (nivel UI)
+  const normalizedEmail = this.formData.email.trim().toLowerCase();
+  if (!normalizedEmail.endsWith('@inacapmail.cl')) {
+    this.errorMessage = 'Solo se permiten correos @inacapmail.cl';
+    this.successMessage = '';
+    return;
+  }
+
+  this.isLoading = true;
+  this.errorMessage = '';
+  this.successMessage = '';
+
+  this.authService
+    .register(normalizedEmail, this.formData.password, {
+      ...this.formData,
+      email: normalizedEmail,
+    })
+    .subscribe({
+      next: (user) => {
+        console.log('✅ Usuario registrado:', user);
+        this.isLoading = false;
+        this.successMessage = 'Registro exitoso. ¡Bienvenido!';
+      },
+      error: (error: any) => {
+        console.error('❌ Error al registrar:', error);
+        this.isLoading = false;
+
+        if (error?.message?.includes('Solo se permiten correos')) {
+          this.errorMessage = error.message;
+        } else {
+          this.errorMessage =
+            'Ocurrió un error durante el registro. Revisa los datos e inténtalo nuevamente.';
+        }
+      },
+    });
+}
 }

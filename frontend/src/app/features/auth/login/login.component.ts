@@ -106,18 +106,28 @@ export class LoginComponent {
   errorMessage = '';
 
   onSubmit() {
-    this.isLoading = true;
-    this.errorMessage = '';
+  this.isLoading = true;
+  this.errorMessage = '';
 
-    this.authService.login(this.credentials.email, this.credentials.password).subscribe({
+  this.authService
+    .login(this.credentials.email, this.credentials.password)
+    .subscribe({
       next: () => {
+        this.isLoading = false;
         this.router.navigate(['/proyectos']);
       },
       error: (error) => {
         this.isLoading = false;
-        this.errorMessage = 'Credenciales inválidas. Por favor, intenta de nuevo.';
+
+        if (error?.message?.includes('Solo se permiten correos')) {
+          this.errorMessage = error.message; // Mensaje específico dominio
+        } else {
+          this.errorMessage =
+            'Credenciales inválidas. Por favor, revisa tu correo y contraseña e intenta de nuevo.';
+        }
+
         console.error('Error de login:', error);
-      }
+      },
     });
-  }
+}
 }
