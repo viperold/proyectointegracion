@@ -1,0 +1,26 @@
+<div class="chat-box border p-3 rounded bg-white shadow-sm" style="height: 350px; overflow-y: auto;">
+  
+  <div *ngFor="let msg of mensajes" class="mb-2">
+    <strong>{{ msg.nombre }}</strong>
+    <span class="text-gray-500 text-sm">
+      ({{ msg.fecha?.toDate() | date:'short' }})
+    </span>
+    <p class="mt-1">{{ msg.mensaje }}</p>
+
+    <hr class="my-2" />
+  </div>
+
+</div>
+
+<!-- Input -->
+<div class="mt-3 flex gap-2">
+  <input 
+    [(ngModel)]="nuevoMensaje" 
+    placeholder="Escribe tu mensaje..."
+    class="form-control"
+  />
+
+  <button class="btn btn-primary" (click)="enviarMensaje()">
+    Enviar
+  </button>
+</div>

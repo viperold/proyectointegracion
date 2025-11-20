@@ -13,16 +13,13 @@
   <!-- 🟢 Proyecto cargado -->
   <div *ngIf="!isLoading && proyectoData" class="project-container">
 
-    <h1 class="mb-3 text-2xl font-bold">
-      {{ proyectoData.titulo }}
-    </h1>
+    <h1 class="mb-3 text-2xl font-bold">{{ proyectoData.titulo }}</h1>
 
     <p class="text-gray-700 mb-4">
       {{ proyectoData.descripcion }}
     </p>
 
     <p><strong>Categoría:</strong> {{ proyectoData.categoria }}</p>
-    <p><strong>Creador:</strong> {{ proyectoData.creadorNombre }}</p>
     <p><strong>Cupos:</strong> {{ proyectoData.cupos }}</p>
 
     <hr class="my-4">
@@ -39,12 +36,23 @@
       </button>
     </div>
 
-    <!-- 🧑‍🎓 ESTUDIANTE -->
-    <div *ngIf="userData?.role === 'estudiante'">
+    <!-- 👨‍🎓 ESTUDIANTE NO POSTULADO -->
+    <div *ngIf="userData?.role === 'estudiante' && !yaPostulado">
       <button class="btn btn-success"
               (click)="postular()">
         Postular al proyecto
       </button>
+    </div>
+
+    <!-- 🟢 ESTUDIANTE YA POSTULADO -->
+    <div *ngIf="userData?.role === 'estudiante' && yaPostulado">
+      <button class="btn btn-warning"
+              (click)="retirarPostulacion()">
+        Retirar postulación
+      </button>
+      <p class="text-sm mt-2 text-green-700">
+        Ya estás postulado a este proyecto.
+      </p>
     </div>
 
     <!-- 👨‍🏫 PROFESOR -->
@@ -54,7 +62,7 @@
       </button>
     </div>
 
-    <!-- 🛡 ADMINISTRADOR -->
+    <!-- 🛡 ADMIN -->
     <div *ngIf="userData?.role === 'administrador'">
       <button class="btn btn-secondary" disabled>
         Los administradores no pueden postular
@@ -64,20 +72,43 @@
     <hr class="my-4">
 
     <!-- ============================= -->
-    <!-- 👥 MOSTRAR PARTICIPANTES -->
+    <!-- 👥 LISTADO DE PARTICIPANTES (CON NOMBRES) -->
     <!-- ============================= -->
-    <div *ngIf="proyectoData.participantes?.length > 0">
+    <div *ngIf="participantesData.length > 0">
       <h3 class="mt-4 text-lg font-semibold">Participantes</h3>
       <ul class="list-disc ml-5 mt-2">
-        <li *ngFor="let p of proyectoData.participantes">
-          {{ p }}
-          <!--  
-             Más adelante podemos mostrar NOMBRE del estudiante
-             trayendo datos desde 'usuarios/{uid}'
-          -->
+        <li *ngFor="let p of participantesData">
+          {{ p.nombre }} {{ p.apellido }} — <span class="text-gray-600">{{ p.carrera }}</span>
         </li>
       </ul>
     </div>
 
+    <div *ngIf="participantesData.length === 0">
+      <p class="text-sm text-gray-500">Aún no hay participantes.</p>
+    </div>
+
   </div>
+  <hr class="my-4">
+  <h3 class="text-lg font-semibold">Chat del Proyecto</h3>
+    <app-proyecto-chat
+      *ngIf="proyectoId"
+      [proyectoId]="proyectoId">
+    </app-proyecto-chat>
+
+
+  <div *ngIf="userData && (yaPostulado || userData.role === 'profesor' || userData.role === 'administrador')">
+    <app-proyecto-chat
+      *ngIf="proyectoId"
+      [proyectoId]="proyectoId">
+    </app-proyecto-chat>
+  </div>
+
+  <div *ngIf="!userData">
+    <p class="text-gray-500 mt-2">Inicia sesión para ver el chat.</p>
+</div>
+
+<div *ngIf="userData && !yaPostulado && userData.role === 'estudiante'">
+  <p class="text-gray-500 mt-2">Debes postular para acceder al chat del proyecto.</p>
+</div>
+
 </div>
