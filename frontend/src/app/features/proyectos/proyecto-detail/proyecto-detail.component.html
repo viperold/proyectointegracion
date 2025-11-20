@@ -1,0 +1,83 @@
+<div class="container mt-4">
+
+  <!-- 🟡 Cargando -->
+  <div *ngIf="isLoading" class="text-center">
+    <p>Cargando proyecto...</p>
+  </div>
+
+  <!-- 🔴 Error -->
+  <div *ngIf="!isLoading && errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+
+  <!-- 🟢 Proyecto cargado -->
+  <div *ngIf="!isLoading && proyectoData" class="project-container">
+
+    <h1 class="mb-3 text-2xl font-bold">
+      {{ proyectoData.titulo }}
+    </h1>
+
+    <p class="text-gray-700 mb-4">
+      {{ proyectoData.descripcion }}
+    </p>
+
+    <p><strong>Categoría:</strong> {{ proyectoData.categoria }}</p>
+    <p><strong>Creador:</strong> {{ proyectoData.creadorNombre }}</p>
+    <p><strong>Cupos:</strong> {{ proyectoData.cupos }}</p>
+
+    <hr class="my-4">
+
+    <!-- ============================= -->
+    <!-- 🟢 BOTONES SEGÚN EL ROL -->
+    <!-- ============================= -->
+
+    <!-- 😴 INVITADO -->
+    <div *ngIf="!userData">
+      <button class="btn btn-primary"
+              (click)="router.navigate(['/login'])">
+        Inicia sesión para postular
+      </button>
+    </div>
+
+    <!-- 🧑‍🎓 ESTUDIANTE -->
+    <div *ngIf="userData?.role === 'estudiante'">
+      <button class="btn btn-success"
+              (click)="postular()">
+        Postular al proyecto
+      </button>
+    </div>
+
+    <!-- 👨‍🏫 PROFESOR -->
+    <div *ngIf="userData?.role === 'profesor'">
+      <button class="btn btn-secondary" disabled>
+        Los profesores no pueden postular
+      </button>
+    </div>
+
+    <!-- 🛡 ADMINISTRADOR -->
+    <div *ngIf="userData?.role === 'administrador'">
+      <button class="btn btn-secondary" disabled>
+        Los administradores no pueden postular
+      </button>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- ============================= -->
+    <!-- 👥 MOSTRAR PARTICIPANTES -->
+    <!-- ============================= -->
+    <div *ngIf="proyectoData.participantes?.length > 0">
+      <h3 class="mt-4 text-lg font-semibold">Participantes</h3>
+      <ul class="list-disc ml-5 mt-2">
+        <li *ngFor="let p of proyectoData.participantes">
+          {{ p }}
+          <!--  
+             Más adelante podemos mostrar NOMBRE del estudiante
+             trayendo datos desde 'usuarios/{uid}'
+          -->
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</div>

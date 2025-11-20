@@ -3,145 +3,141 @@ import {
   Auth,
   User,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   updateProfile,
-  signOut
+  signOut,
 } from '@angular/fire/auth';
-import { Firestore, doc, setDoc, getDoc } from '@angular/fire/firestore';
+
+import {
+  Firestore,
+  doc,
+  getDoc,
+  setDoc,
+} from '@angular/fire/firestore';
+
 import { from, Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-
   constructor(
     private auth: Auth,
     private firestore: Firestore
-  ) {}
+  ) {
+    console.log('AuthService inicializado');
+  }
 
-  // 🔹 1. Registrar usuario (Auth + Firestore)
+  // ----------------------------------------------------
+  // 🔐 REGISTRO DE USUARIO
+  // ----------------------------------------------------
   register(email: string, password: string, extraData?: any): Observable<User> {
-  return from(
-    (async () => {
-      // 🔐 Normalizar y validar dominio
-      const normalizedEmail = email.trim().toLowerCase();
-
-      if (!normalizedEmail.endsWith('@inacapmail.cl')) {
-        // Lanzamos error: esto llegará al .subscribe(error) del componente
-        throw new Error('Solo se permiten correos @inacapmail.cl');
-      }
-
-      // Crear usuario en Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        this.auth,
-        normalizedEmail,
-        password
-      );
-      const user = userCredential.user;
-
-      // Actualizar displayName si viene nombre + apellido
-      if (extraData?.nombre && extraData?.apellido) {
-        await updateProfile(user, {
-          displayName: `${extraData.nombre} ${extraData.apellido}`,
-        });
-      }
-
-      // Guardar/actualizar en Firestore
-      const userDocRef = doc(this.firestore, `usuarios/${user.uid}`);
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        nombre: extraData?.nombre || '',
-        apellido: extraData?.apellido || '',
-        email: normalizedEmail,
-        carrera: extraData?.carrera || '',
-        semestre: extraData?.semestre || 1,
-        telefono: extraData?.telefono || '',
-        bio: extraData?.bio || '',
-        avatar: extraData?.avatar || '',
-        habilidades: extraData?.habilidades || [],
-        is_active: true,
-        date_joined: new Date().toISOString(),
-      });
-
-      return user;
-    })()
-  );
-}
-
-  // 🔹 2. Iniciar sesión
-  login(email: string, password: string): Observable<User> {
-  return from(
-    (async () => {
-      const normalizedEmail = email.trim().toLowerCase();
-
-      if (!normalizedEmail.endsWith('@inacapmail.cl')) {
-        throw new Error('Solo se permiten correos @inacapmail.cl');
-      }
-
-      const userCredential = await signInWithEmailAndPassword(
-        this.auth,
-        normalizedEmail,
-        password
-      );
-      return userCredential.user;
-    })()
-  );
-}
-
-  // 🔹 3. Cerrar sesión
-  logout(): Observable<void> {
-    return from(signOut(this.auth));
-  }
-
-  // 🔹 4. Obtener el usuario autenticado actual (una vez)
-  async getCurrentUser(): Promise<User | null> {
-    return new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(this.auth, (user) => {
-        unsubscribe();
-        resolve(user);
-      });
-    });
-  }
-
-  // 🔹 5. Obtener flujo reactivo del usuario (para Observables)
-  getCurrentUser$(): Observable<User | null> {
-    return new Observable((subscriber) => {
-      const unsubscribe = onAuthStateChanged(this.auth, (user) => {
-        subscriber.next(user);
-      });
-      return { unsubscribe };
-    });
-  }
-
-  // 🔹 6. Saber si hay un usuario autenticado
-  isAuthenticated(): boolean {
-    return !!this.auth.currentUser;
-  }
-
-  // 🔹 7. Token de autenticación (opcional para backend)
-  async getToken(): Promise<string | null> {
-    const user = this.auth.currentUser;
-    return user ? await user.getIdToken() : null;
-  }
-
-  // 🔹 8. Actualizar datos del perfil (Firestore)
-  updateProfile(data: any): Observable<void> {
     return from(
       (async () => {
-        const user = this.auth.currentUser;
-        if (!user) throw new Error('Usuario no autenticado');
+        // Normalizar correo
+        const normalizedEmail = email.trim().toLowerCase();
 
-        const userDocRef = doc(this.firestore, `usuarios/${user.uid}`);
-        const existing = await getDoc(userDocRef);
-
-        if (existing.exists()) {
-          await setDoc(userDocRef, { ...existing.data(), ...data }, { merge: true });
-        } else {
-          await setDoc(userDocRef, { uid: user.uid, ...data });
+        // Validar dominio
+        if (!normalizedEmail.endsWith('@inacapmail.cl')) {
+          throw new Error('Solo se permiten correos @inacapmail.cl');
         }
+
+        // Crear usuario en Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(
+          this.auth,
+          normalizedEmail,
+          password
+        );
+
+        const user = userCredential.user;
+
+        // Actualizar displayName si hay nombre/apellido
+        if (extraData?.nombre && extraData?.apellido) {
+          await updateProfile(user, {
+            displayName: `${extraData.nombre} ${extraData.apellido}`,
+          });
+        }
+
+        // Guardar datos del usuario en Firestore
+        const userDocRef = doc(this.firestore, `usuarios/${user.uid}`);
+
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          nombre: extraData?.nombre || '',
+          apellido: extraData?.apellido || '',
+          email: normalizedEmail,
+          carrera: extraData?.carrera || '',
+          semestre: extraData?.semestre || '',
+          telefono: extraData?.telefono || '',
+          bio: extraData?.bio || '',
+          avatar: extraData?.avatar || '',
+          habilidades: extraData?.habilidades || [],
+          role: 'estudiante', // 🔥 rol por defecto
+          is_active: true,
+          date_joined: new Date().toISOString(),
+        });
+
+        return user;
       })()
     );
+  }
+
+  // ----------------------------------------------------
+  // 🔓 LOGIN
+  // ----------------------------------------------------
+  login(email: string, password: string): Observable<User> {
+    return from(
+      (async () => {
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Validar dominio antes del login
+        if (!normalizedEmail.endsWith('@inacapmail.cl')) {
+          throw new Error('Solo se permiten correos @inacapmail.cl');
+        }
+
+        const userCredential = await signInWithEmailAndPassword(
+          this.auth,
+          normalizedEmail,
+          password
+        );
+
+        return userCredential.user;
+      })()
+    );
+  }
+
+  // ----------------------------------------------------
+  // 🚪 LOGOUT
+  // ----------------------------------------------------
+  logout(): Promise<void> {
+    return signOut(this.auth);
+  }
+
+  // ----------------------------------------------------
+  // 👤 OBTENER DATOS COMPLETOS DEL USUARIO (INCLUYE ROL)
+  // ----------------------------------------------------
+  async getCurrentUserData(): Promise<any | null> {
+    const current = this.auth.currentUser;
+
+    if (!current) {
+      return null;
+    }
+
+    const userDocRef = doc(this.firestore, `usuarios/${current.uid}`);
+    const snapshot = await getDoc(userDocRef);
+
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    return snapshot.data();
+  }
+
+  // ----------------------------------------------------
+  // 🔄 OBSERVAR CAMBIOS DE AUTENTICACIÓN
+  // ----------------------------------------------------
+  onAuthChange(callback: (user: User | null) => void) {
+    return onAuthStateChanged(this.auth, callback);
   }
 }

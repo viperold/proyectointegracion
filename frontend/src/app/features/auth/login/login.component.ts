@@ -109,8 +109,17 @@ export class LoginComponent {
   this.isLoading = true;
   this.errorMessage = '';
 
+  const normalizedEmail = this.credentials.email.trim().toLowerCase();
+
+  // 🔐 VALIDACIÓN DE DOMINIO ANTES DEL LOGIN
+  if (!normalizedEmail.endsWith('@inacapmail.cl')) {
+    this.isLoading = false;
+    this.errorMessage = 'Solo se permiten correos @inacapmail.cl';
+    return;
+  }
+
   this.authService
-    .login(this.credentials.email, this.credentials.password)
+    .login(normalizedEmail, this.credentials.password)
     .subscribe({
       next: () => {
         this.isLoading = false;
@@ -119,11 +128,12 @@ export class LoginComponent {
       error: (error) => {
         this.isLoading = false;
 
+        // Mostrar mensaje claro si el AuthService genera error de dominio
         if (error?.message?.includes('Solo se permiten correos')) {
-          this.errorMessage = error.message; // Mensaje específico dominio
+          this.errorMessage = error.message;
         } else {
           this.errorMessage =
-            'Credenciales inválidas. Por favor, revisa tu correo y contraseña e intenta de nuevo.';
+            'Credenciales inválidas. Por favor revisa tu correo y contraseña.';
         }
 
         console.error('Error de login:', error);

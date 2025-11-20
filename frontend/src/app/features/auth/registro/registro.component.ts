@@ -229,38 +229,46 @@ export class RegistroComponent implements OnInit {
   }
 
   onSubmit() {
+  // Reset de mensajes
+  this.errorMessage = '';
+  this.successMessage = '';
+
   // 1. Validación de contraseñas
   if (this.formData.password !== this.formData.password2) {
     this.errorMessage = 'Las contraseñas no coinciden';
-    this.successMessage = '';
     return;
   }
 
-  // 2. Validación de dominio INACAP (nivel UI)
+  // 2. Normalizar y validar el correo
   const normalizedEmail = this.formData.email.trim().toLowerCase();
+
   if (!normalizedEmail.endsWith('@inacapmail.cl')) {
     this.errorMessage = 'Solo se permiten correos @inacapmail.cl';
-    this.successMessage = '';
     return;
   }
 
   this.isLoading = true;
-  this.errorMessage = '';
-  this.successMessage = '';
 
+  // 3. Llamar al servicio de autenticación
   this.authService
     .register(normalizedEmail, this.formData.password, {
-      ...this.formData,
+      nombre: this.formData.nombre,
+      apellido: this.formData.apellido,
+      carrera: this.formData.carrera,
+      semestre: this.formData.semestre,
+      telefono: this.formData.telefono,
+      bio: this.formData.bio,
+      avatar: '',
+      habilidades: [],
       email: normalizedEmail,
     })
     .subscribe({
       next: (user) => {
-        console.log('✅ Usuario registrado:', user);
+        console.log('Usuario registrado', user);
         this.isLoading = false;
         this.successMessage = 'Registro exitoso. ¡Bienvenido!';
       },
-      error: (error: any) => {
-        console.error('❌ Error al registrar:', error);
+      error: (error) => {
         this.isLoading = false;
 
         if (error?.message?.includes('Solo se permiten correos')) {
@@ -269,7 +277,9 @@ export class RegistroComponent implements OnInit {
           this.errorMessage =
             'Ocurrió un error durante el registro. Revisa los datos e inténtalo nuevamente.';
         }
-      },
+
+        console.error('Error registro:', error);
+      }
     });
 }
 }

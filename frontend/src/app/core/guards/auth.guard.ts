@@ -1,13 +1,14 @@
-// Guard de autenticación
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { CanActivateFn, Router } from '@angular/router';
+import { Auth } from '@angular/fire/auth';
 
-export const authGuard = () => {
-  const authService = inject(AuthService);
+export const authGuard: CanActivateFn = async () => {
+  const auth = inject(Auth);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
+  const current = auth.currentUser;
+
+  if (current) {
     return true;
   }
 
